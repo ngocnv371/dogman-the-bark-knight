@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useCallback } from 'react';
 import { GameStatus, Player, Platform, Cat, Bone, ThrownBone, GameObject } from '../types';
 import * as C from '../constants';
@@ -116,12 +117,46 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
   };
 
   const drawBone = (ctx: CanvasRenderingContext2D, bone: Bone | ThrownBone) => {
-    ctx.fillStyle = 'white';
-    ctx.fillRect(bone.x + 5, bone.y, bone.width - 10, bone.height);
+    ctx.fillStyle = '#f8fafc'; // slate-50 for a nice off-white
+
+    const { x, y, width, height } = bone;
+    const h = height;
+    const w = width;
+
+    // Proportions
+    const endRadius = h / 2;
+    const shaftInset = h * 0.25; // How much the shaft is thinner on each side
+
     ctx.beginPath();
-    ctx.arc(bone.x + 5, bone.y + bone.height / 2, bone.height / 2, 0, 2 * Math.PI);
-    ctx.arc(bone.x + bone.width - 5, bone.y + bone.height / 2, bone.height / 2, 0, 2 * Math.PI);
+
+    // Start at top-left of the left "knob"
+    ctx.moveTo(x + endRadius, y);
+    
+    // Top edge
+    // Curve from left knob to shaft
+    ctx.quadraticCurveTo(x + endRadius, y + shaftInset, x + w / 2, y + shaftInset);
+    // Curve from shaft to right knob
+    ctx.quadraticCurveTo(x + w - endRadius, y + shaftInset, x + w - endRadius, y);
+    
+    // Right knob (a semicircle)
+    ctx.arc(x + w - endRadius, y + endRadius, endRadius, -Math.PI / 2, Math.PI / 2, false);
+
+    // Bottom edge
+    // Curve from right knob to shaft
+    ctx.quadraticCurveTo(x + w - endRadius, y + h - shaftInset, x + w / 2, y + h - shaftInset);
+    // Curve from shaft to left knob
+    ctx.quadraticCurveTo(x + endRadius, y + h - shaftInset, x + endRadius, y + h);
+
+    // Left knob (a semicircle)
+    ctx.arc(x + endRadius, y + endRadius, endRadius, Math.PI / 2, -Math.PI / 2, false);
+    
+    ctx.closePath();
     ctx.fill();
+
+    // Add a subtle outline/shadow for depth, makes it pop from the background
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
   };
 
   const drawMoon = (ctx: CanvasRenderingContext2D) => {
@@ -304,13 +339,17 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
         catsRef.current.forEach((cat, catIndex) => {
             if (bone.x < cat.x + cat.width && bone.x + bone.width > cat.x &&
                 bone.y < cat.y + cat.height && bone.y + bone.height > cat.y) {
-                thrownBonesRef.current.splice(boneIndex, 1);
-                catsRef.current.splice(catIndex, 1);
+                // A bit of a hack to prevent removing from array while iterating
+                thrownBonesRef.current[boneIndex] = null;
+                catsRef.current[catIndex] = null;
                 scoreRef.current += 50;
                 setScore(s => s + 50);
             }
         });
     });
+
+    thrownBonesRef.current = thrownBonesRef.current.filter(Boolean);
+    catsRef.current = catsRef.current.filter(Boolean);
 
     // Collision detection: player vs collectible bones
     collectibleBonesRef.current.forEach((bone, index) => {
