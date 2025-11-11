@@ -1,6 +1,5 @@
-
 import React, { useRef, useEffect, useCallback } from 'react';
-import { GameStatus, Player, Platform, Cat, Bone, ThrownBone } from '../types';
+import { GameStatus, Player, Platform, Cat, Bone, ThrownBone, GameObject } from '../types';
 import * as C from '../constants';
 
 interface GameProps {
@@ -23,6 +22,10 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
   const keysRef = useRef<{ [key: string]: boolean }>({});
   const cameraXRef = useRef(0);
   const lastBoneThrowTimeRef = useRef(0);
+
+  // Parallax background refs
+  const distantBuildingsRef = useRef<GameObject[]>([]);
+  const midgroundBuildingsRef = useRef<GameObject[]>([]);
 
   const drawPlayer = (ctx: CanvasRenderingContext2D, player: Player) => {
     // Cape
@@ -91,6 +94,54 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
     ctx.fill();
   };
 
+  const drawMoon = (ctx: CanvasRenderingContext2D) => {
+    ctx.fillStyle = '#f0f9ff'; // slate-50
+    ctx.beginPath();
+    // Main circle
+    ctx.arc(C.CANVAS_WIDTH - 120, 100, 50, 0, 2 * Math.PI);
+    ctx.fill();
+    // Shadow circle to make a crescent
+    ctx.fillStyle = '#0f172a'; // Same as sky color
+    ctx.beginPath();
+    ctx.arc(C.CANVAS_WIDTH - 135, 90, 45, 0, 2 * Math.PI);
+    ctx.fill();
+};
+
+  const generateBuildings = useCallback((
+      buildingsRef: React.MutableRefObject<GameObject[]>,
+      config: {
+          cameraX: number,
+          horizonY: number,
+          minWidth: number, maxWidth: number,
+          minHeight: number, maxHeight: number,
+          minGap: number, maxGap: number,
+      }
+  ) => {
+      let lastBuildingX = 0;
+      if (buildingsRef.current.length > 0) {
+          const lastBuilding = buildingsRef.current[buildingsRef.current.length - 1];
+          lastBuildingX = lastBuilding.x + lastBuilding.width;
+      } else {
+          lastBuildingX = -50; // Start slightly off-screen
+      }
+
+      while (lastBuildingX < config.cameraX + C.CANVAS_WIDTH * 2) {
+          const gap = config.minGap + Math.random() * (config.maxGap - config.minGap);
+          const newBuildingX = lastBuildingX + gap;
+
+          const width = config.minWidth + Math.random() * (config.maxWidth - config.minWidth);
+          const height = config.minHeight + Math.random() * (config.maxHeight - config.minHeight);
+          
+          buildingsRef.current.push({
+              x: newBuildingX,
+              y: config.horizonY - height,
+              width,
+              height,
+          });
+          lastBuildingX = newBuildingX + width;
+      }
+  }, []);
+
   const generatePlatforms = useCallback(() => {
     let lastPlatformX = 0;
     let lastPlatformY = C.CANVAS_HEIGHT - 50;
@@ -145,7 +196,22 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
     scoreRef.current = 0;
     setScore(0);
     generatePlatforms();
-  }, [setScore, generatePlatforms]);
+
+    // Reset and generate initial background
+    distantBuildingsRef.current = [];
+    midgroundBuildingsRef.current = [];
+    generateBuildings(distantBuildingsRef, {
+        cameraX: 0, horizonY: C.CANVAS_HEIGHT,
+        minWidth: 80, maxWidth: 200, minHeight: 100, maxHeight: 350,
+        minGap: 0, maxGap: 10,
+    });
+    generateBuildings(midgroundBuildingsRef, {
+        cameraX: 0, horizonY: C.CANVAS_HEIGHT,
+        minWidth: 60, maxWidth: 150, minHeight: 80, maxHeight: 250,
+        minGap: 5, maxGap: 20,
+    });
+
+  }, [setScore, generatePlatforms, generateBuildings]);
 
   const gameLoop = useCallback(() => {
     if (gameStatus !== GameStatus.Playing) return;
@@ -194,7 +260,7 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
     });
 
     // Update camera
-    const cameraDeadzone = C.CANVAS_WIDTH / 2;
+    const cameraDeadzone = C.CANVAS_WIDTH / 3;
     if (player.x > cameraXRef.current + cameraDeadzone) {
       cameraXRef.current = player.x - cameraDeadzone;
     }
@@ -239,34 +305,80 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
       onGameOver(scoreRef.current);
     }
 
-    // Procedural generation
+    // --- PROCEDURAL GENERATION ---
+    // Platforms
     platformsRef.current = platformsRef.current.filter(p => p.x + p.width > cameraXRef.current);
     generatePlatforms();
+    // Background buildings
+    distantBuildingsRef.current = distantBuildingsRef.current.filter(b => b.x + b.width > cameraXRef.current * 0.2);
+    generateBuildings(distantBuildingsRef, {
+        cameraX: cameraXRef.current * 0.2, horizonY: C.CANVAS_HEIGHT,
+        minWidth: 80, maxWidth: 200, minHeight: 100, maxHeight: 350,
+        minGap: 0, maxGap: 10,
+    });
+    midgroundBuildingsRef.current = midgroundBuildingsRef.current.filter(b => b.x + b.width > cameraXRef.current * 0.5);
+    generateBuildings(midgroundBuildingsRef, {
+        cameraX: cameraXRef.current * 0.5, horizonY: C.CANVAS_HEIGHT,
+        minWidth: 60, maxWidth: 150, minHeight: 80, maxHeight: 250,
+        minGap: 5, maxGap: 20,
+    });
+
 
     // --- DRAWING LOGIC ---
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Background
+
+    // 1. Background Gradient
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, '#0f172a'); // slate-900
     gradient.addColorStop(1, '#334155'); // slate-700
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // 2. Moon (no parallax)
+    drawMoon(ctx);
 
+    // 3. Distant City (parallax = 0.2)
+    ctx.save();
+    ctx.translate(-cameraXRef.current * 0.2, 0);
+    ctx.fillStyle = '#1e293b'; // slate-800
+    distantBuildingsRef.current.forEach(building => {
+        ctx.fillRect(building.x, building.y, building.width, building.height);
+    });
+    ctx.restore();
+
+    // 4. Midground City (parallax = 0.5)
+    ctx.save();
+    ctx.translate(-cameraXRef.current * 0.5, 0);
+    const midgroundBuildingColor = '#334155'; // slate-700
+    ctx.fillStyle = midgroundBuildingColor;
+    midgroundBuildingsRef.current.forEach(building => {
+        ctx.fillRect(building.x, building.y, building.width, building.height);
+        // Windows
+        ctx.fillStyle = '#facc15'; // yellow-400
+        for(let y = building.y + 10; y < building.y + building.height - 10; y += 20) {
+            for(let x = building.x + 10; x < building.x + building.width - 10; x += 20) {
+                if (Math.random() < 0.4) {
+                    ctx.fillRect(x, y, 5, 8);
+                }
+            }
+        }
+        ctx.fillStyle = midgroundBuildingColor; // Reset color
+    });
+    ctx.restore();
+
+    // 5. Main Game World (parallax = 1)
     ctx.save();
     ctx.translate(-cameraXRef.current, 0);
-
-    // Draw game objects
     platformsRef.current.forEach(p => drawPlatform(ctx, p));
     catsRef.current.forEach(c => drawCat(ctx, c));
     collectibleBonesRef.current.forEach(b => drawBone(ctx, b));
     thrownBonesRef.current.forEach(b => drawBone(ctx, b));
     drawPlayer(ctx, player);
-
     ctx.restore();
 
     gameFrame.current = requestAnimationFrame(gameLoop);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameStatus, onGameOver, setScore, generatePlatforms]);
+  }, [gameStatus, onGameOver, setScore, generatePlatforms, generateBuildings]);
 
   useEffect(() => {
     if (gameStatus === GameStatus.Playing) {
