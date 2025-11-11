@@ -65,23 +65,38 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
   
   const drawCat = (ctx: CanvasRenderingContext2D, cat: Cat) => {
     ctx.fillStyle = 'black';
-    ctx.beginPath();
+    const headCenterX = cat.x + cat.width / 2;
+
     // Body
-    ctx.roundRect(cat.x, cat.y + 10, cat.width, cat.height-10, [10]);
+    ctx.beginPath();
+    ctx.roundRect(cat.x, cat.y + 10, cat.width, cat.height - 10, [10]);
     ctx.fill();
+
     // Head
-    ctx.arc(cat.x + cat.width / 2, cat.y + 10, cat.width/3, Math.PI, 0);
+    ctx.beginPath();
+    ctx.arc(headCenterX, cat.y + 10, cat.width / 3, Math.PI, 0);
     ctx.fill();
+
     // Ears
     ctx.beginPath();
-    ctx.moveTo(cat.x + cat.width/2 - 20, cat.y + 5);
-    ctx.lineTo(cat.x + cat.width/2 - 10, cat.y - 5);
-    ctx.lineTo(cat.x + cat.width/2, cat.y + 5);
+    ctx.moveTo(headCenterX - 15, cat.y + 5);
+    ctx.lineTo(headCenterX - 8, cat.y - 5);
+    ctx.lineTo(headCenterX, cat.y + 5);
     ctx.fill();
     ctx.beginPath();
-    ctx.moveTo(cat.x + cat.width/2 + 20, cat.y + 5);
-    ctx.lineTo(cat.x + cat.width/2 + 10, cat.y - 5);
-    ctx.lineTo(cat.x + cat.width/2, cat.y + 5);
+    ctx.moveTo(headCenterX + 15, cat.y + 5);
+    ctx.lineTo(headCenterX + 8, cat.y - 5);
+    ctx.lineTo(headCenterX, cat.y + 5);
+    ctx.fill();
+
+    // Evil Eyes
+    ctx.fillStyle = '#ef4444'; // red-500
+    const eyeY = cat.y + 8;
+    ctx.beginPath();
+    ctx.arc(headCenterX - 7, eyeY, 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(headCenterX + 7, eyeY, 2.5, 0, 2 * Math.PI);
     ctx.fill();
   };
 
@@ -357,7 +372,8 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
         ctx.fillStyle = '#facc15'; // yellow-400
         for(let y = building.y + 10; y < building.y + building.height - 10; y += 20) {
             for(let x = building.x + 10; x < building.x + building.width - 10; x += 20) {
-                if (Math.random() < 0.4) {
+                // Deterministic "random" based on position to prevent flickering
+                if (((x * 31 + y * 17) % 100) < 40) {
                     ctx.fillRect(x, y, 5, 8);
                 }
             }
