@@ -18,6 +18,7 @@ export interface Bone extends GameObject {} // Collectible bone
 
 export interface ThrownBone extends GameObject {
   vx: number; // horizontal velocity
+  rotation: number;
 }
 
 export enum GameStatus {

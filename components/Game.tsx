@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useCallback } from 'react';
 import { GameStatus, Player, Platform, Cat, Bone, ThrownBone, GameObject } from '../types';
 import * as C from '../constants';
@@ -19,7 +18,7 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
   const platformsRef = useRef<Platform[]>([]);
   const catsRef = useRef<Cat[]>([]);
   const collectibleBonesRef = useRef<Bone[]>([]);
-  const thrownBonesRef = useRef<ThrownBone[]>([]);
+  const thrownBonesRef = useRef<(ThrownBone | null)[]>([]);
   const keysRef = useRef<{ [key: string]: boolean }>({});
   const cameraXRef = useRef(0);
   const lastBoneThrowTimeRef = useRef(0);
@@ -117,9 +116,19 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
   };
 
   const drawBone = (ctx: CanvasRenderingContext2D, bone: Bone | ThrownBone) => {
+    ctx.save();
+    
+    const { x, y, width, height } = bone;
+
+    // If it's a thrown bone, apply rotation
+    if ('rotation' in bone && typeof bone.rotation === 'number') {
+      ctx.translate(x + width / 2, y + height / 2);
+      ctx.rotate(bone.rotation);
+      ctx.translate(-(x + width / 2), -(y + height / 2));
+    }
+
     ctx.fillStyle = '#f8fafc'; // slate-50 for a nice off-white
 
-    const { x, y, width, height } = bone;
     const h = height;
     const w = width;
 
@@ -157,6 +166,8 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
     ctx.lineWidth = 1;
     ctx.stroke();
+    
+    ctx.restore();
   };
 
   const drawMoon = (ctx: CanvasRenderingContext2D) => {
@@ -300,7 +311,8 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
             y: player.y + player.height / 3,
             width: C.THROWN_BONE_WIDTH,
             height: C.THROWN_BONE_HEIGHT,
-            vx: C.THROWN_BONE_SPEED
+            vx: C.THROWN_BONE_SPEED,
+            rotation: 0,
         });
         lastBoneThrowTimeRef.current = Date.now();
     }
@@ -331,12 +343,18 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
     }
 
     // Update thrown bones
-    thrownBonesRef.current = thrownBonesRef.current.filter(b => b.x < cameraXRef.current + C.CANVAS_WIDTH);
-    thrownBonesRef.current.forEach(bone => bone.x += bone.vx);
+    thrownBonesRef.current = thrownBonesRef.current.filter(b => b && b.x < cameraXRef.current + C.CANVAS_WIDTH) as ThrownBone[];
+    thrownBonesRef.current.forEach(bone => {
+      if (!bone) return;
+      bone.x += bone.vx;
+      bone.rotation += 0.2;
+    });
 
     // Collision detection: thrown bones vs cats
     thrownBonesRef.current.forEach((bone, boneIndex) => {
+        if (!bone) return;
         catsRef.current.forEach((cat, catIndex) => {
+            if (!cat) return;
             if (bone.x < cat.x + cat.width && bone.x + bone.width > cat.x &&
                 bone.y < cat.y + cat.height && bone.y + bone.height > cat.y) {
                 // A bit of a hack to prevent removing from array while iterating
@@ -349,7 +367,7 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
     });
 
     thrownBonesRef.current = thrownBonesRef.current.filter(Boolean);
-    catsRef.current = catsRef.current.filter(Boolean);
+    catsRef.current = catsRef.current.filter(Boolean) as Cat[];
 
     // Collision detection: player vs collectible bones
     collectibleBonesRef.current.forEach((bone, index) => {
@@ -440,9 +458,9 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
     ctx.save();
     ctx.translate(-cameraXRef.current, 0);
     platformsRef.current.forEach(p => drawPlatform(ctx, p));
-    catsRef.current.forEach(c => drawCat(ctx, c));
+    catsRef.current.forEach(c => c && drawCat(ctx, c));
     collectibleBonesRef.current.forEach(b => drawBone(ctx, b));
-    thrownBonesRef.current.forEach(b => drawBone(ctx, b));
+    thrownBonesRef.current.forEach(b => b && drawBone(ctx, b));
     drawPlayer(ctx, player);
     ctx.restore();
 
