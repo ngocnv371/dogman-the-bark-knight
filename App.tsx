@@ -2,7 +2,6 @@
 import React, { useState, useCallback } from 'react';
 import Game from './components/Game';
 import { GameStatus } from './types';
-import { Bone, Cat, Dog, Skull } from './components/Icons';
 
 const StartScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => (
   <div className="absolute inset-0 bg-gray-900 bg-opacity-80 flex flex-col items-center justify-center text-center p-4">
@@ -19,7 +18,7 @@ const StartScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => (
         <li><span className="font-bold text-white">Up Arrow:</span> Jump</li>
         <li><span className="font-bold text-white">Spacebar:</span> Throw Bone</li>
       </ul>
-      <p className="mt-4">Collect bones <Bone className="inline-block h-6 w-6 align-text-bottom" /> to score. Defeat evil cats <Cat className="inline-block h-6 w-6 align-text-bottom" />. Don't let them touch you!</p>
+      <p className="mt-4">Collect bones <i className="fas fa-bone inline-block align-text-bottom"></i> to score. Defeat evil cats <i className="fas fa-cat inline-block align-text-bottom"></i>. Don't let them touch you!</p>
     </div>
     <button
       onClick={onStart}
@@ -32,7 +31,7 @@ const StartScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => (
 
 const GameOverScreen: React.FC<{ score: number; highScore: number; onRestart: () => void }> = ({ score, highScore, onRestart }) => (
   <div className="absolute inset-0 bg-red-900 bg-opacity-80 flex flex-col items-center justify-center text-center p-4">
-    <Skull className="w-24 h-24 text-gray-200 mb-4" />
+    <i className="fas fa-skull text-8xl text-gray-200 mb-4"></i>
     <h1 className="text-6xl md:text-8xl font-black uppercase text-gray-200 drop-shadow-lg" style={{ fontFamily: 'Impact, sans-serif' }}>
       Death of Shame!
     </h1>

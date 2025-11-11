@@ -64,39 +64,54 @@ const Game: React.FC<GameProps> = ({ gameStatus, setScore, onGameOver }) => {
   };
   
   const drawCat = (ctx: CanvasRenderingContext2D, cat: Cat) => {
-    ctx.fillStyle = 'black';
-    const headCenterX = cat.x + cat.width / 2;
+    ctx.fillStyle = '#111827'; // A very dark gray, looks better than pure black
+    const { x, y, width, height } = cat;
 
-    // Body
+    // Tail
     ctx.beginPath();
-    ctx.roundRect(cat.x, cat.y + 10, cat.width, cat.height - 10, [10]);
+    ctx.moveTo(x + width * 0.9, y + height * 0.9);
+    ctx.bezierCurveTo(
+      x + width * 1.3, y + height * 0.7, // Control point 1
+      x + width * 1.3, y + height * 0.2, // Control point 2
+      x + width * 0.9, y + height * 0.2  // End point
+    );
+    // Add thickness to the tail
+     ctx.bezierCurveTo(
+      x + width * 1.2, y + height * 0.3, // Inner curve cp 1
+      x + width * 1.2, y + height * 0.6, // Inner curve cp 2
+      x + width * 0.8, y + height * 0.9  // Back to body
+    );
+    ctx.closePath();
     ctx.fill();
 
-    // Head
+    // Body and Head as one silhouette
     ctx.beginPath();
-    ctx.arc(headCenterX, cat.y + 10, cat.width / 3, Math.PI, 0);
-    ctx.fill();
-
-    // Ears
-    ctx.beginPath();
-    ctx.moveTo(headCenterX - 15, cat.y + 5);
-    ctx.lineTo(headCenterX - 8, cat.y - 5);
-    ctx.lineTo(headCenterX, cat.y + 5);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(headCenterX + 15, cat.y + 5);
-    ctx.lineTo(headCenterX + 8, cat.y - 5);
-    ctx.lineTo(headCenterX, cat.y + 5);
+    ctx.moveTo(x + width, y + height); // Start at bottom right
+    // Right side of body/back
+    ctx.quadraticCurveTo(x + width, y + height * 0.4, x + width * 0.7, y + height * 0.2);
+    // Top of head
+    ctx.lineTo(x + width * 0.5, y + height * 0.15); // Ear base right
+    ctx.lineTo(x + width * 0.6, y); // Right ear tip
+    ctx.lineTo(x + width * 0.4, y + height * 0.1); // Between ears
+    ctx.lineTo(x + width * 0.3, y); // Left ear tip
+    ctx.lineTo(x + width * 0.2, y + height * 0.15); // Ear base left
+    // Face and front of body
+    ctx.quadraticCurveTo(x - width * 0.05, y + height * 0.5, x, y + height);
+    // Bottom
+    ctx.closePath();
     ctx.fill();
 
     // Evil Eyes
     ctx.fillStyle = '#ef4444'; // red-500
-    const eyeY = cat.y + 8;
+    const eyeYPos = y + height * 0.3;
+    const eyeRadius = 3;
+    
     ctx.beginPath();
-    ctx.arc(headCenterX - 7, eyeY, 2.5, 0, 2 * Math.PI);
+    ctx.arc(x + width * 0.35, eyeYPos, eyeRadius, 0, Math.PI * 2);
     ctx.fill();
+    
     ctx.beginPath();
-    ctx.arc(headCenterX + 7, eyeY, 2.5, 0, 2 * Math.PI);
+    ctx.arc(x + width * 0.55, eyeYPos, eyeRadius, 0, Math.PI * 2);
     ctx.fill();
   };
 
