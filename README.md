@@ -1,11 +1,28 @@
-<div align="center">
+# Dogman: The Bark Knight
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+"Dogman: The Bark Knight" is a satirical side-scrolling browser game born from a love for classic 2D platformers and a playful take on the dark, gritty superhero trope.
 
-  <h1>Built with AI Studio</h2>
+The concept is simple: you are **Dogman**, a caped crusader who is part man, part dog, and all hero. As the "Bark Knight," you patrol the city rooftops at night, embodying the hero the city deserves, but certainly not the one it needs right now.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## Core Gameplay Mechanics
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+*   **Run & Jump:** Navigate a procedurally generated cityscape by running along rooftops and jumping over gaps.
+*   **Collect Bones:** Your primary objective is to collect bones scattered across the rooftops. Each bone adds to your score.
+*   **Fight Evil Cats:** The city's criminal underbelly is represented by nefarious evil cats. Dogman can throw a seemingly endless supply of bones to defeat them.
+*   **Avoid Shame:** Direct contact with a cat is devastating to Dogman's heroic ego, resulting in a "death of shame" and ending the game.
 
-</div>
+## How to Play
+
+*   **Arrow Keys:** Move Left & Right
+*   **Up Arrow:** Jump
+*   **Spacebar:** Throw Bone
+
+## The Vibe
+
+The game aims for a humorous, comic-book aesthetic, reflected in the title and character design. The graphics are simple and stylized for a crisp, clean look. It's a lighthearted adventure meant to be played right in your browser.
+
+## Tech Stack
+
+*   **React:** For UI components and state management.
+*   **TypeScript:** For type safety.
+*   **Tailwind CSS:** For styling the UI.
